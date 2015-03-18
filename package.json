@@ -5,6 +5,7 @@
   "main": "server.js",
   "dependencies": {
     "express": "^4.12.2",
+    "request": "^2.53.0",
     "typescript": "^1.4.1",
     "typescript-require": "^0.2.8"
   },
