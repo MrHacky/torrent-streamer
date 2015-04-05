@@ -74,14 +74,15 @@ class TorrentServer {
 				while (!r.length && !timeout) {
 					r = tryparse(yield dorequest(url), []);
 					if (!r.length)
-						yield sleep(1000);
+						timeout = true;
+						//yield sleep(1000);
 				}
 				if (!r.length) {
 					ti.files = null; // uncache failure status
-					throw "Unknown torrent";
+					return null;
 				} else
 					return r;
-			});
+			}).catch(console.log);
 			sleep(15000).then(() => {
 				timeout = true;
 			});
@@ -92,12 +93,12 @@ class TorrentServer {
 	files(hash)
 	{
 		return this.filesraw(hash).then(d => {
-			return d.map((e, i) => ({
-				title: e.name,
-				index: i,
-			})).sort((a, b) => {
-				var ta = a.title.toLowerCase();			
-				var tb = b.title.toLowerCase();
+			return d && d.map((e, i) => {
+				e.index = i;
+				return e;
+			}).sort((a, b) => {
+				var ta = a.name.toLowerCase();
+				var tb = b.name.toLowerCase();
 				if (ta.indexOf("sample") != tb.indexOf("sample"))
 					return ta.indexOf("sample") == -1 ? -1 : 1;
 				if (ta < tb)
@@ -105,14 +106,14 @@ class TorrentServer {
 				if (ta > tb)
 					return 1;
 				return 0;
-			}).filter((e) => isplayable(e.title.match(/([^\.]*)$/)[1]))
+			}).filter((e) => isplayable(e.name.match(/([^\.]*)$/)[1]))
 		});
 	}
 
 	file(hash, file)
 	{
 		return this.filesraw(hash).then(d => {
-			if (d[file])
+			if (d && d[file])
 				return d[file];
 			else
 				throw "Invalid file index";

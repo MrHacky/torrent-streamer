@@ -8,11 +8,10 @@ var co = require('co');
 var request = require('request');
 var express = require('express')
 var xmlbuilder = require('xmlbuilder');
-var jpeg = require('jpeg-js');
 var parseRange = require('range-parser')
 
 var TorrentServer = require("./torrentserver.js");
-//var Streamer = require("./streamer.js");
+var text2video = require("./text2video.js");
 
 var cfg = {
 	bthost: 'http://pi2-gentoo.local:8081'
@@ -95,17 +94,82 @@ app.use("/playlist", function(req, res, next) {
 		]));
 	} else {
 		btserver.files(hash).then(resp => {
-			res.send(createplaylist(resp.map((e) => ({
-				url: host + "/stream/" + encodeURIComponent(e.title) + "?hash=" + hash + "&file=" + e.index,
-				title: e.title,
-			}))));
+			if (!resp)
+				throw "unknown torrent";
+			resp = resp.map((e) => ({
+				url: host + "/stream/" + encodeURIComponent(e.name) + "?hash=" + hash + "&file=" + e.index,
+				title: e.name,
+			}));
+			resp.push({
+				url: host + "/loading?hash=" + hash,
+				title: "Done...",
+			});
+			res.send(createplaylist(resp));
 		}, (e) => res.status(500).json({ error: "" + e }));
 	}
 });
 
 app.use("/loading", function(req, res, next) {
+        if (!req.query.noct || (req.headers["user-agent"] || "").indexOf("Chrome") == -1) {
+        } else {
+                res.send("testing");
+                return;
+        }
+	res.type("mkv");
+        if (req.method == "HEAD")
+                return res.end();
+
+
+	var t2v = text2video(res);
+	var text = "Waiting for metadata...\n"
+	t2v.write(text);
+
+	req.on("close", () => { console.log("ffmpeg-close"); t2v.stop(); });
+	req.on("end"  , () => { console.log("ffmpeg-end"  ); t2v.stop(); });
+
 	var hash = req.query.hash;
-	res.redirect("/static/loadingbar.mp4");
+	co(function*() {
+		var info;
+		while (!info) {
+			info = yield btserver.files(hash);
+			text += "reponse: " + (info && info.length);
+			t2v.write(text);
+		}
+
+		text = info.map(e => e.progress + "\t" + e.name).join("\n") + "\n";
+		t2v.write(text);
+
+		if (!info[0] || req.query.starting != 1)
+			return;
+		var file = info[0].index;
+		var target = info[0].size_bytes / 200;
+
+		text += "target: " + target;
+		t2v.write(text);
+
+		var limit = 0;
+		var prio = -1;
+		while (limit < target) {
+			var response = yield btserver.updateprio(hash, file, limit, prio);
+			console.log(response);
+			prio = response.new;
+			limit += response.max_length;
+			if (response.max_length == 0)
+				yield sleep(1000);
+		}
+		t2v.stop();
+		if (prio != -1)
+			yield btserver.updateprio(hash, file, info[0].size_bytes, prio);
+	});
+	return;
+	co(function*() {
+		yield sleep(30000);
+		console.log("stopping");
+		t2v.stop();
+	});
+
+	var hash = req.query.hash;
+	//res.redirect("/static/loadingbar.mp4");
 	co(function*() {
 		var info = yield btserver.files(hash);
 		if (!info[0])
