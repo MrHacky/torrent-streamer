@@ -2,8 +2,9 @@
   "name": "web",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "_main": "server.js",
   "dependencies": {
+    "co": "^4.5.1",
     "express": "^4.12.2",
     "jpeg-js": "^0.1.1",
     "range-parser": "^1.0.2",
@@ -14,7 +15,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --harmony_arrow_functions server.io.js"
   },
   "author": "",
   "license": "LGPL"
