@@ -161,35 +161,6 @@ app.use("/loading", function(req, res, next) {
 		if (prio != -1)
 			yield btserver.updateprio(hash, file, info[0].size_bytes, prio);
 	});
-	return;
-	co(function*() {
-		yield sleep(30000);
-		console.log("stopping");
-		t2v.stop();
-	});
-
-	var hash = req.query.hash;
-	//res.redirect("/static/loadingbar.mp4");
-	co(function*() {
-		var info = yield btserver.files(hash);
-		if (!info[0])
-			return;
-		var file = info[0].index;
-
-		var limit = 0;
-		var prio = -1;
-		while (limit == 0) {
-			var response = yield btserver.updateprio(hash, file, 0, prio);
-			console.log(response);
-			prio = response.new;
-			limit = response.max_length;
-			if (limit == 0)
-				yield sleep(1000);
-		}
-		if (prio != -1)
-			yield btserver.updateprio(hash, file, 0, -2);
-		console.log("loading-limit=" + limit);
-	});
 });
 
 app.use("/stream", function(req, res, next) {
