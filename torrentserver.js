@@ -140,6 +140,11 @@ class TorrentServer {
 		var lm = ti.limits[file] || 0;
 		return Math.max(0, lm - offset);
 	}
+
+	dorequest(path)
+	{
+		return dorequest(this._host + path);
+	}
 };
 
 module.exports = TorrentServer;
