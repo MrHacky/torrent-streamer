@@ -99,6 +99,9 @@ function text2video(res)
 		stop: function() {
 			done = true;
 		},
+		done: function() {
+			return done;
+		},
 	};
 }
 
