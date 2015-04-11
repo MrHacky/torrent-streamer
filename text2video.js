@@ -92,7 +92,9 @@ function text2video(res)
 
 	return {
 		write: function(text) {
-			fs.writeFileSync(tmpfile.name, "\n"+text);
+			if (typeof text == "object" && text.length)
+				text = text.join("\n");
+			fs.writeFileSync(tmpfile.name, "\t\t\t\t"+text);
 		},
 		stop: function() {
 			done = true;
