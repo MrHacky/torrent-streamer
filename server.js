@@ -13,6 +13,8 @@ var parseRange = require('range-parser')
 var TorrentServer = require("./torrentserver.js");
 var text2video = require("./text2video.js");
 
+require('longjohn');
+
 var cfg = {
 	bthost: 'http://pi2-gentoo.local:8081'
 };
