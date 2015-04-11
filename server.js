@@ -121,22 +121,35 @@ app.use("/loading", function(req, res, next) {
 
 
 	var t2v = text2video(res);
-	var text = "Waiting for metadata...\n"
+	var text = ["test", "Waiting for metadata..." ]
 	t2v.write(text);
 
+	var done = false;
 	req.on("close", () => { console.log("ffmpeg-close"); t2v.stop(); });
 	req.on("end"  , () => { console.log("ffmpeg-end"  ); t2v.stop(); });
+
+
+	co(function*() {
+		while (!t2v.done()) {
+			var data = yield btserver.dorequest("/json/transferInfo");
+			data = JSON.parse(data);
+			text[0] = ("" + (data.ul_alltime / data.dl_alltime)).slice(0, 5) + "\t" + (0|(data.dl_speed / 1024)) + "/" + (0|(data.ul_speed / 1024));
+			t2v.write(text);
+			yield sleep(3000);
+		}
+	});
 
 	var hash = req.query.hash;
 	co(function*() {
 		var info;
 		while (!info) {
 			info = yield btserver.files(hash);
-			text += "reponse: " + (info && info.length);
+			text[2] = "reponse: " + (info && info.length);
 			t2v.write(text);
 		}
 
-		text = info.map(e => e.progress + "\t" + e.name).join("\n") + "\n";
+		text = text.slice(0, 2).concat(info.map(e => e.progress + "\t" + e.name));
+		text[1] = "Got metadata";
 		t2v.write(text);
 
 		if (!info[0] || req.query.starting != 1)
@@ -144,7 +157,7 @@ app.use("/loading", function(req, res, next) {
 		var file = info[0].index;
 		var target = info[0].size_bytes / 200;
 
-		text += "target: " + target;
+		text[1] = "target: ?\t?/" + target;
 		t2v.write(text);
 
 		var limit = 0;
@@ -154,6 +167,8 @@ app.use("/loading", function(req, res, next) {
 			console.log(response);
 			prio = response.new;
 			limit += response.max_length;
+			text[1] = (0|(limit * 1000 / target)) + "\ttarget: " + limit + '/' + target;
+			t2v.write(text);
 			if (response.max_length == 0)
 				yield sleep(1000);
 		}
