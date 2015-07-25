@@ -81,11 +81,15 @@ function text2video(res)
 	res.on("finish", () => { console.log("ffmpeg-finish"); done = true; });
 	res.on("error" , () => { console.log("ffmpeg-error" ); done = true; });
 	co(function*() {
+		ffmpeg.stdin.write(frame);
+		var nextms = new Date().getTime();
 		while (!done) {
-			//console.log(new Date().getTime());
-			ffmpeg.stdin.write(frame);
-			ffmpeg.stdin.write(frame);
-			yield sleep(1000);
+			var curms = new Date().getTime();
+			if (curms >= nextms) {
+				ffmpeg.stdin.write(frame);
+				nextms += 500;
+			}
+			yield sleep(100);
 		}
 		ffmpeg.stdin.end();
 	});

@@ -98,6 +98,8 @@ app.use("/playlist", function(req, res, next) {
 		btserver.files(hash).then(resp => {
 			if (!resp)
 				throw "unknown torrent";
+			if (req.query.skip)
+				resp = resp.slice(+req.query.skip);
 			resp = resp.map((e) => ({
 				url: host + "/stream/" + encodeURIComponent(e.name) + "?hash=" + hash + "&file=" + e.index,
 				title: e.name,
@@ -137,7 +139,7 @@ app.use("/loading", function(req, res, next) {
 			data = JSON.parse(data);
 			text[0] = ("" + (data.ul_alltime / data.dl_alltime)).slice(0, 5) + "\t" + (0|(data.dl_speed / 1024)) + "/" + (0|(data.ul_speed / 1024));
 			t2v.write(text);
-			yield sleep(3000);
+			yield sleep(1000);
 		}
 	});
 
@@ -148,6 +150,8 @@ app.use("/loading", function(req, res, next) {
 			info = yield btserver.files(hash);
 			text[2] = "reponse: " + (info && info.length);
 			t2v.write(text);
+			if (!info)
+				yield sleep(1000);
 		}
 
 		text = text.slice(0, 2).concat(info.map(e => e.progress + "\t" + e.name));
@@ -164,7 +168,7 @@ app.use("/loading", function(req, res, next) {
 
 		var limit = 0;
 		var prio = -1;
-		while (limit < target) {
+		while (limit < target && !t2v.done()) {
 			var response = yield btserver.updateprio(hash, file, limit, prio);
 			console.log(response);
 			prio = response.new;
