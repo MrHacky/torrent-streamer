@@ -98,6 +98,8 @@ app.use("/playlist", function(req, res, next) {
 		btserver.files(hash).then(resp => {
 			if (!resp)
 				throw "unknown torrent";
+			if (req.query.skip)
+				resp = resp.slice(+req.query.skip);
 			resp = resp.map((e) => ({
 				url: host + "/stream/" + encodeURIComponent(e.name) + "?hash=" + hash + "&file=" + e.index,
 				title: e.name,
