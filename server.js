@@ -164,7 +164,7 @@ app.use("/loading", function(req, res, next) {
 
 		var limit = 0;
 		var prio = -1;
-		while (limit < target) {
+		while (limit < target && !t2v.done()) {
 			var response = yield btserver.updateprio(hash, file, limit, prio);
 			console.log(response);
 			prio = response.new;
