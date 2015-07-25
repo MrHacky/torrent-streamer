@@ -49,6 +49,14 @@ function tryparse(json, def)
 	}
 }
 
+function compare(a, b) {
+	if (a < b)
+		return -1;
+	if (a > b)
+		return 1;
+	return 0;
+}
+
 class TorrentServer {
 	constructor(host)
 	{
@@ -101,11 +109,23 @@ class TorrentServer {
 				var tb = b.name.toLowerCase();
 				if (ta.indexOf("sample") != tb.indexOf("sample"))
 					return ta.indexOf("sample") == -1 ? -1 : 1;
-				if (ta < tb)
-					return -1;
-				if (ta > tb)
-					return 1;
-				return 0;
+				var cmp = 0;
+				while (true) {
+					var sa = ta.match(/[^0-9]*/)[0];
+					var sb = tb.match(/[^0-9]*/)[0];
+					if (cmp = compare(sa, sb))
+						return cmp;
+					ta = ta.slice(sa.length);
+					tb = tb.slice(sb.length);
+					var na = ta.match(/[0-9]*/)[0];
+					var nb = tb.match(/[0-9]*/)[0];
+					if (na == "" || nb == "")
+						return compare(ta, tb);
+					if (cmp = compare(+na, +nb))
+						return cmp;
+					ta = ta.slice(na.length);
+					tb = tb.slice(nb.length);
+				}
 			}).filter((e) => isplayable(e.name.match(/([^\.]*)$/)[1]))
 		});
 	}
